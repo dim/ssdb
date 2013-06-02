@@ -91,6 +91,7 @@ static proc_map_t proc_map;
 	DEF_PROC(info);
 	DEF_PROC(dump);
 	DEF_PROC(sync140);
+	DEF_PROC(eval);
 #undef DEF_PROC
 
 
@@ -147,6 +148,7 @@ static Command commands[] = {
 	PROC(info, "r"),
 	PROC(dump, "b"),
 	PROC(sync140, "b"),
+	PROC(eval, "w"),
 
 	{NULL, NULL, 0, NULL}
 };
@@ -289,7 +291,7 @@ static int proc_info(Server *serv, Link *link, const Request &req, Response *res
 	return 0;
 }
 
-
+#include "proc_scripting.cpp"
 #include "proc_kv.cpp"
 #include "proc_hash.cpp"
 #include "proc_zset.cpp"

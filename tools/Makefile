@@ -2,6 +2,5 @@
 all:
 
 clean:
-	rm -f *.exe.stackdump
-	rm -rf _cpy_
+	rm -rf *.exe.stackdump _cpy_
 

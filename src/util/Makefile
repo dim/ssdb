@@ -1,10 +1,8 @@
 include ../../build_config.mk
 
-LEVELDB_PATH = ../../deps/${LEVELDB}
-CFLAGS += -I${LEVELDB_PATH}/include -I../../deps/jemalloc-3.3.1/include
-CLIBS +=  -L${LEVELDB_PATH} -lleveldb
-OBJS = log.o fde.o config.o bytes.o
-EXES = 
+CFLAGS += -I../../deps/jemalloc-3.3.1/include
+OBJS = log.o fde.o config.o bytes.o sha1.o
+EXES =
 
 all: ${OBJS}
 
@@ -19,6 +17,9 @@ fde.o: fde.h fde.cpp fde_select.cpp fde_epoll.cpp
 
 bytes.o: bytes.h bytes.cpp
 	g++ ${CFLAGS} -c bytes.cpp
+
+sha1.o: sha1.h sha1.cpp
+	g++ ${CFLAGS} -c sha1.cpp
 
 clean:
 	rm -f ${EXES} ${OBJS}

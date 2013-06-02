@@ -15,6 +15,4 @@ run:
 	python a.py
 
 clean:
-	rm -rf _cpy_
-	rm -f *.pyc
-	rm -f antlr3/*.pyc
+	rm -rf _cpy_ *.pyc antlr3/*.pyc

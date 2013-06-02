@@ -1,14 +1,17 @@
 include ../build_config.mk
 
 LEVELDB_PATH = ../deps/${LEVELDB}
-CFLAGS += -I${LEVELDB_PATH}/include -I../deps/jemalloc-3.3.1/include
+LUA_PATH = ../deps/${LUA}
+
+CFLAGS += -I${LEVELDB_PATH}/include -I${LUA_PATH}/src -I../deps/jemalloc-3.3.1/include
 CLIBS += -L${LEVELDB_PATH} ${LEVELDB_PATH}/libleveldb.a
+CLIBS += -L${LUA_PATH} ${LUA_PATH}/src/liblua.a
 CLIBS += ../deps/jemalloc-3.3.1/lib/libjemalloc.a
 CLIBS += ${PLATFORM_LDFLAGS}
 
-OBJS = ssdb.o t_kv.o t_hash.o t_zset.o link.o \
+OBJS = ssdb.o t_scripting.o t_kv.o t_hash.o t_zset.o link.o \
 	backend_dump.o backend_sync.o slave.o binlog.o serv.o
-UTIL_OBJS = util/log.o util/fde.o util/config.o util/bytes.o
+UTIL_OBJS = util/log.o util/fde.o util/config.o util/bytes.o util/sha1.o
 EXES = ../ssdb-server ../ssdb-server.exe ../tools/ssdb-dump ../tools/ssdb-dump.exe
 
 
@@ -17,9 +20,12 @@ all: ssdb.h ${OBJS}
 	g++ -o ../tools/ssdb-dump ${OBJS} ${UTIL_OBJS} ${CFLAGS} ${CLIBS} ssdb-dump.cpp
 
 objs: ssdb.h ${OBJS}
-	
+
 ssdb.o: ssdb.h ssdb.cpp
 	g++ ${CFLAGS} -c ssdb.cpp
+
+t_scripting.o: ssdb.h t_scripting.h t_scripting.cpp
+	g++ ${CFLAGS} -c t_scripting.cpp
 
 t_kv.o: ssdb.h t_kv.h t_kv.cpp
 	g++ ${CFLAGS} -c t_kv.cpp

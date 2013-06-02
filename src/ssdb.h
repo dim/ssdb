@@ -12,12 +12,12 @@
 #include "util/thread.h"
 #include "iterator.h"
 #include "binlog.h"
+#include "lua.hpp"
 
 class KIterator;
 class HIterator;
 class ZIterator;
 class Slave;
-
 
 class SSDB{
 private:
@@ -26,11 +26,13 @@ private:
 	leveldb::Options options;
 
 	std::vector<Slave *> slaves;
-	
+
 	SSDB();
+	static lua_State* initLua();
 public:
 	BinlogQueue *binlogs;
-	
+  lua_State *lua;
+
 	~SSDB();
 	static SSDB* open(const Config &conf, const std::string &base_dir);
 
@@ -47,6 +49,9 @@ public:
 	int raw_del(const Bytes &key) const;
 	int raw_get(const Bytes &key, std::string *val) const;
 
+	/* eval */
+	int eval(const Bytes &code, const std::vector<Bytes> &args, int offset, std::string *val) const;
+
 	/* key value */
 
 	int set(const Bytes &key, const Bytes &val, char log_type=BinlogType::SYNC);
@@ -54,7 +59,7 @@ public:
 	int incr(const Bytes &key, int64_t by, std::string *new_val, char log_type=BinlogType::SYNC);
 	int multi_set(const std::vector<Bytes> &kvs, int offset=0, char log_type=BinlogType::SYNC);
 	int multi_del(const std::vector<Bytes> &keys, int offset=0, char log_type=BinlogType::SYNC);
-	
+
 	int get(const Bytes &key, std::string *val) const;
 	// return (start, end)
 	KIterator* scan(const Bytes &start, const Bytes &end, int limit) const;
@@ -82,7 +87,7 @@ public:
 	int zincr(const Bytes &name, const Bytes &key, int64_t by, std::string *new_val, char log_type=BinlogType::SYNC);
 	int multi_zset(const Bytes &name, const std::vector<Bytes> &kvs, int offset=0, char log_type=BinlogType::SYNC);
 	int multi_zdel(const Bytes &name, const std::vector<Bytes> &keys, int offset=0, char log_type=BinlogType::SYNC);
-	
+
 	int64_t zsize(const Bytes &name) const;
 	int zget(const Bytes &name, const Bytes &key, std::string *score) const;
 	/**

@@ -8,6 +8,7 @@ SSDB::SSDB(){
 	db = NULL;
 	meta_db = NULL;
 	binlogs = NULL;
+  lua = NULL;
 }
 
 SSDB::~SSDB(){
@@ -31,6 +32,9 @@ SSDB::~SSDB(){
 	if(meta_db){
 		delete meta_db;
 	}
+	if(lua){
+  	lua_close(lua);
+  }
 	log_debug("SSDB finalized");
 }
 
@@ -82,6 +86,9 @@ SSDB* SSDB::open(const Config &conf, const std::string &base_dir){
 	}
 	ssdb->binlogs = new BinlogQueue(ssdb->db);
 
+	// Init Lua
+  ssdb->lua = initLua();
+
 	{ // slaves
 		const Config *repl_conf = conf.get("replication");
 		if(repl_conf != NULL){
@@ -104,7 +111,7 @@ SSDB* SSDB::open(const Config &conf, const std::string &base_dir){
 					type = "sync";
 					is_mirror = false;
 				}
-				
+
 				log_info("slaveof: %s:%d, type: %s", ip.c_str(), port, type.c_str());
 				Slave *slave = new Slave(ssdb, ssdb->meta_db, ip.c_str(), port, is_mirror);
 				slave->start();
@@ -217,6 +224,38 @@ std::vector<std::string> SSDB::info() const{
 	return info;
 }
 
+lua_State* SSDB::initLua() {
+	static const luaL_Reg libs[] = {
+	  {"_G", luaopen_base},
+	  {"table", luaopen_table},
+	  {"string", luaopen_string},
+	  {"math", luaopen_math},
+	  {"bit", luaopen_bit32},
+	  {"debug", luaopen_debug},
+	  {NULL, NULL}
+	};
+
+	// Init state
+  lua_State *lua = luaL_newstate();
+
+	// Load Lua stdlib
+  const luaL_Reg *lib;
+  lib = libs;
+
+  for(; lib->func != NULL; lib++){
+    luaL_requiref(lua, lib->name, lib->func, 1);
+  	lua_settop(lua, 0); // empty the stack
+  }
+
+	// Disable functions we don't want to expose
+  lua_pushnil(lua);
+  lua_setglobal(lua, "loadfile");
+  lua_pushnil(lua);
+  lua_setglobal(lua, "require");
+
+  return lua;
+}
+
 /*
 int SSDB::key_range(char data_type, std::string *start, std::string *end) const{
 	leveldb::ReadOptions iterate_options;
@@ -224,7 +263,7 @@ int SSDB::key_range(char data_type, std::string *start, std::string *end) const{
 
 	std::string start_str;
 	start_str.push_back(data_type);
-	
+
 	it->Seek(key_str);
 	if(!it->Valid()){
 		// Iterator::prev requires Valid, so we seek to last

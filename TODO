@@ -2,3 +2,7 @@
 
 * process write requests in a seperate thread
 * process scan requests in seperate threads?
+
+* scripting: actually expose ssdb methods to Lua
+* scripting: execute scripts via `evalsha`
+* scripting: process Lua table responses
