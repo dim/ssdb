@@ -19,6 +19,7 @@ class HIterator;
 class ZIterator;
 class Slave;
 
+
 class SSDB{
 private:
 	leveldb::DB* db;
@@ -28,13 +29,14 @@ private:
 	std::vector<Slave *> slaves;
 
 	SSDB();
-	static lua_State* initLua();
+	lua_State* luaInit();
 public:
 	BinlogQueue *binlogs;
   lua_State *lua;
 
 	~SSDB();
 	static SSDB* open(const Config &conf, const std::string &base_dir);
+	static int script_lua_call(lua_State *lua);
 
 	// return (start, end], not include start
 	Iterator* iterator(const std::string &start, const std::string &end, int limit) const;
@@ -50,7 +52,7 @@ public:
 	int raw_get(const Bytes &key, std::string *val) const;
 
 	/* eval */
-	int eval(const Bytes &code, const std::vector<Bytes> &args, int offset, std::string *val) const;
+	int eval(const Bytes &code, const std::vector<Bytes> &args, int offset, std::vector<std::string> *list) const;
 
 	/* key value */
 

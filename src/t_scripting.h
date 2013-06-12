@@ -38,4 +38,3 @@ std::string script_error(std::string msg, std::string name){
 }
 
 #endif
-

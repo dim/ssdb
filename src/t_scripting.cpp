@@ -1,20 +1,20 @@
 #include "t_scripting.h"
 
 // eval
-int SSDB::eval(const Bytes &code, const std::vector<Bytes> &args, int offset, std::string *val) const{
+int SSDB::eval(const Bytes &code, const std::vector<Bytes> &args, int offset, std::vector<std::string> *list) const{
   std::string fname = script_sha1(code);
   std::string func  = script_wrap(code, fname);
 
   // Load function, exit on error
   if (luaL_loadbuffer(lua, func.c_str(), func.size(), "@user_script")) {
-    *(val) = script_error("failed compiling script", fname);
+    list->push_back(script_error("failed compiling script", fname));
     lua_pop(lua,1);
     return -1;
   }
 
   // Call function, exit on error
   if (lua_pcall(lua,0,0,0)) {
-    *(val) = script_error("failed running script", fname);
+    list->push_back(script_error("failed running script", fname));
     lua_pop(lua,1);
     return -1;
   }
@@ -22,7 +22,7 @@ int SSDB::eval(const Bytes &code, const std::vector<Bytes> &args, int offset, st
   // Find script, exit on error
   lua_getglobal(lua, fname.c_str());
   if (lua_isnil(lua,1)) {
-    *(val) = script_error("no script", fname);
+    list->push_back(script_error("no script", fname));
     lua_pop(lua,1);
     return -1;
   }
@@ -46,25 +46,31 @@ int SSDB::eval(const Bytes &code, const std::vector<Bytes> &args, int offset, st
   int err = lua_pcall(lua, 1, 1, 0);
   lua_gc(lua, LUA_GCSTEP, 1);
   if (err) {
-    *(val) = script_error("failed running script", fname);
+    list->push_back(script_error("failed running script", fname));
     lua_pop(lua, 1);
     return -1;
   }
 
   // Read response
+  int len;
   switch(lua_type(lua,-1)) {
   case LUA_TSTRING:
-    (*val).append(lua_tostring(lua,-1),lua_rawlen(lua,-1));
+    list->push_back(lua_tostring(lua,-1));
     break;
   case LUA_TBOOLEAN:
-    *(val) = lua_toboolean(lua,-1) ? "1" : "0";
+    list->push_back(lua_toboolean(lua,-1) ? "1" : "0");
     break;
   case LUA_TNUMBER:
-    *(val) = double_to_str(lua_tonumber(lua,-1));
+    list->push_back(double_to_str(lua_tonumber(lua,-1)));
     break;
-  // case LUA_TTABLE:
-  //   // TODO
-  //   break;
+  case LUA_TTABLE:
+    len = lua_rawlen(lua,-1);
+    for(int i=0;i < len; i++) {
+      lua_rawgeti(lua, -1, i+1);
+      list->push_back(lua_tostring(lua,-1));
+      lua_pop(lua,1);
+    }
+    break;
   default:
     lua_pop(lua, 1);
     return 0;
@@ -74,3 +80,6 @@ int SSDB::eval(const Bytes &code, const std::vector<Bytes> &args, int offset, st
   return 1;
 }
 
+int SSDB::script_lua_call(lua_State *lua) {
+  return 0;
+}

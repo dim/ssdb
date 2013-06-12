@@ -4,7 +4,7 @@ LEVELDB_PATH = ../deps/${LEVELDB}
 LUA_PATH = ../deps/${LUA}
 
 CFLAGS += -I${LEVELDB_PATH}/include -I${LUA_PATH}/src -I../deps/jemalloc-3.3.1/include
-CLIBS += -L${LEVELDB_PATH} ${LEVELDB_PATH}/libleveldb.a
+CLIBS += -L${LEVELDB_PATH} ${LEVELDB_PATH}/libleveldb.a -lsnappy
 CLIBS += -L${LUA_PATH} ${LUA_PATH}/src/liblua.a
 CLIBS += ../deps/jemalloc-3.3.1/lib/libjemalloc.a
 CLIBS += ${PLATFORM_LDFLAGS}

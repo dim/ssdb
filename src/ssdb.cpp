@@ -87,7 +87,7 @@ SSDB* SSDB::open(const Config &conf, const std::string &base_dir){
 	ssdb->binlogs = new BinlogQueue(ssdb->db);
 
 	// Init Lua
-  ssdb->lua = initLua();
+  ssdb->lua = ssdb->luaInit();
 
 	{ // slaves
 		const Config *repl_conf = conf.get("replication");
@@ -224,34 +224,51 @@ std::vector<std::string> SSDB::info() const{
 	return info;
 }
 
-lua_State* SSDB::initLua() {
-	static const luaL_Reg libs[] = {
-	  {"_G", luaopen_base},
-	  {"table", luaopen_table},
-	  {"string", luaopen_string},
-	  {"math", luaopen_math},
-	  {"bit", luaopen_bit32},
-	  {"debug", luaopen_debug},
-	  {NULL, NULL}
-	};
+static const luaL_Reg luaStdLib[] = {
+  {"_G", luaopen_base},
+  {"table", luaopen_table},
+  {"string", luaopen_string},
+  {"math", luaopen_math},
+  {"bit", luaopen_bit32},
+  {"debug", luaopen_debug},
+  {NULL, NULL}
+};
 
+static const luaL_Reg luaMethods[] = {
+    {"call", SSDB::script_lua_call},
+    { NULL, NULL }
+};
+
+lua_State* SSDB::luaInit(){
 	// Init state
   lua_State *lua = luaL_newstate();
 
 	// Load Lua stdlib
-  const luaL_Reg *lib;
-  lib = libs;
-
+	const luaL_Reg *lib = luaStdLib;
   for(; lib->func != NULL; lib++){
     luaL_requiref(lua, lib->name, lib->func, 1);
   	lua_settop(lua, 0); // empty the stack
   }
 
 	// Disable functions we don't want to expose
-  lua_pushnil(lua);
-  lua_setglobal(lua, "loadfile");
-  lua_pushnil(lua);
-  lua_setglobal(lua, "require");
+	lua_pushnil(lua);
+	lua_setglobal(lua, "loadfile");
+	lua_pushnil(lua);
+	lua_setglobal(lua, "require");
+
+	// Initialize the ssdb singleton
+	SSDB** udata = (SSDB**) lua_newuserdata(lua, sizeof(SSDB*));
+	*udata = this;
+	int mod = lua_gettop(lua);
+
+	luaL_newmetatable(lua, "SSDB__MT");
+	int mt = lua_gettop(lua);
+
+	luaL_newlib(lua, luaMethods);
+	lua_setfield(lua, mt, "__index");
+
+	lua_setmetatable(lua, mod);
+	lua_setglobal(lua, "ssdb");
 
   return lua;
 }
