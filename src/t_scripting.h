@@ -4,6 +4,11 @@
 #include "ssdb.h"
 #include "util/sha1.h"
 
+#define SSDB_LUA_MT "SSDB__MT"
+
+static int script_lua_get(lua_State *lua);
+static int script_lua_incr(lua_State *lua);
+
 static inline
 std::string script_sha1(const Bytes &code){
   unsigned char hash[20];
