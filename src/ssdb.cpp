@@ -87,7 +87,7 @@ SSDB* SSDB::open(const Config &conf, const std::string &base_dir){
 	ssdb->binlogs = new BinlogQueue(ssdb->db);
 
 	// Init Lua
-  ssdb->lua = ssdb->luaInit();
+	ssdb->lua = ssdb->luaInit();
 
 	{ // slaves
 		const Config *repl_conf = conf.get("replication");
