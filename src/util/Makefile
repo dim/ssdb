@@ -1,6 +1,7 @@
 include ../../build_config.mk
 
-CFLAGS += -I../../deps/jemalloc-3.3.1/include
+CFLAGS += -I../../deps/${LEVELDB}/include -I../../deps/jemalloc-3.3.1/include
+
 OBJS = log.o fde.o config.o bytes.o sha1.o
 EXES =
 
